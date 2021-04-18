@@ -1,3 +1,61 @@
+const StorageCtrl = (function() {
+    
+    return {
+        storeItem: function(item) {
+            let items
+            
+            if(localStorage.getItem('items') === null) {
+                items = []
+                items.push(item)
+
+                localStorage.setItem('items', JSON.stringify(items))
+            } else {
+                items = JSON.parse(localStorage.getItem('items'))
+
+                items.push(item)
+
+                localStorage.setItem('items', JSON.stringify(items))
+            }
+        },
+        getItemsFromStorage: function() {
+            let items
+            if(localStorage.getItem('items') === null) {
+                items = []
+                console.log("asd " + items)
+            } else {
+                items = JSON.parse(localStorage.getItem('items'))
+                console.log(items)
+            }
+            return items
+        },
+        updateItemStorage: function(updatedItem) {
+            let items = JSON.parse(localStorage.getItem('items'))
+
+            items.forEach(function(item, index) {
+                if(updatedItem.id === item.id){
+                    items.splice(index, 1, updatedItem)
+                }
+            })
+
+            localStorage.setItem('items', JSON.stringify(items))
+        },
+        deleteItemFromStorage: function(id) {
+            let items = JSON.parse(localStorage.getItem('items'))
+
+            items.forEach(function(item, index) {
+                if(id === item.id){
+                    items.splice(index, 1)
+                }
+            })
+
+            localStorage.setItem('items', JSON.stringify(items))
+        },
+        clearItemsFromStorage: function() {
+            localStorage.removeItem('items')
+        }
+    }
+})()
+
 const ItemCtrl = (function() {
     const Item = function(id,name,calories) {
         this.id = id
@@ -6,11 +64,12 @@ const ItemCtrl = (function() {
     }
 
     const data = {
-        items: [
-            // {id: 0, name: 'Steak Dinner', calories: 1200},
-            // {id: 1, name: 'Cookie', calories: 400},
-            // {id: 2, name: 'Eggs', calories: 300}
-        ],
+        // items: [
+        //     // {id: 0, name: 'Steak Dinner', calories: 1200},
+        //     // {id: 1, name: 'Cookie', calories: 400},
+        //     // {id: 2, name: 'Eggs', calories: 300}
+        // ],
+        items: StorageCtrl.getItemsFromStorage(),
         currentItem: null,
         totalCalories: 0
     }
@@ -114,7 +173,7 @@ const UICtrl = (function() {
             let html = ''
 
             items.forEach(item => {
-                html += `<li class="collection-item" id="${item.id}">
+                html += `<li class="collection-item" id="item-${item.id}">
                             <strong>${item.name}: </strong> <em>${item.calories} Calories</em>
                             <a href="#" class="secondary-content">
                                 <i class="edit-item fa fa-pencil-alt"></i>
@@ -207,9 +266,7 @@ const UICtrl = (function() {
     }
 })()
 
-
-
-const App = (function(ItemCtrl, UICtrl) {
+const App = (function(ItemCtrl, StorageCtrl, UICtrl) {
     
     const loadEventListeners = function() {
         const UISelectors = UICtrl.getSelectors()
@@ -245,8 +302,12 @@ const App = (function(ItemCtrl, UICtrl) {
             
             UICtrl.addListItem(newItem)
 
+            
+
             const totalCalories = ItemCtrl.getTotalCalories()
             UICtrl.showTotalCalories(totalCalories)
+
+            StorageCtrl.storeItem(newItem)
 
             UICtrl.clearInput()
         }
@@ -257,6 +318,7 @@ const App = (function(ItemCtrl, UICtrl) {
     const itemEditClick = function(e) {
         if(e.target.classList.contains('edit-item')) {
             const listId = e.target.parentNode.parentNode.id
+            console.log(listId);
 
             const listIdArr = listId.split('-')
 
@@ -282,6 +344,9 @@ const App = (function(ItemCtrl, UICtrl) {
 
         const totalCalories = ItemCtrl.getTotalCalories()
         UICtrl.showTotalCalories(totalCalories)
+
+        StorageCtrl.updateItemStorage(updatedItem)
+
         UICtrl.clearEditState()
 
         e.preventDefault()
@@ -296,6 +361,9 @@ const App = (function(ItemCtrl, UICtrl) {
 
         const totalCalories = ItemCtrl.getTotalCalories()
         UICtrl.showTotalCalories(totalCalories)
+
+        StorageCtrl.deleteItemFromStorage(currentItem.id)
+
         UICtrl.clearEditState()
 
         e.preventDefault()
@@ -310,6 +378,8 @@ const App = (function(ItemCtrl, UICtrl) {
 
         UICtrl.removeItems()
 
+        StorageCtrl.clearItemsFromStorage()
+
         UICtrl.hideList()
     }
 
@@ -322,10 +392,14 @@ const App = (function(ItemCtrl, UICtrl) {
 
             items.length === 0 ? UICtrl.hideList() : UICtrl.populateItemList(items)
 
+            const totalCalories = ItemCtrl.getTotalCalories();
+
+            UICtrl.showTotalCalories(totalCalories);
+
             loadEventListeners()
         }
     }
 
-})(ItemCtrl, UICtrl)
+})(ItemCtrl, StorageCtrl, UICtrl)
 
 App.init()
